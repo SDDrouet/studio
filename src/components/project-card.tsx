@@ -4,19 +4,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { TeamMembers } from './team-members';
 import { Badge } from './ui/badge';
-import { Edit, FolderKanban, Star } from 'lucide-react';
+import { Edit, MessageSquarePlus, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { EditProjectDialog } from './edit-project-dialog';
 import { Button } from './ui/button';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 interface ProjectCardProps {
   project: Project;
   allUsers: User[];
+  currentUser: FirebaseUser | null;
 }
 
-export function ProjectCard({ project, allUsers }: ProjectCardProps) {
+export function ProjectCard({ project, allUsers, currentUser }: ProjectCardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -64,6 +66,8 @@ export function ProjectCard({ project, allUsers }: ProjectCardProps) {
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   const isCompleted = project.status === 'completed';
 
+  const userHasGivenFeedback = feedback.some(f => f.userId === currentUser?.uid);
+
   const averageRating = feedback.length > 0
     ? feedback.reduce((acc, fb) => acc + fb.rating, 0) / feedback.length
     : 0;
@@ -74,6 +78,17 @@ export function ProjectCard({ project, allUsers }: ProjectCardProps) {
     setIsEditDialogOpen(true);
   }
 
+  const handleFeedbackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Since the whole card is a link, we just let the default behavior navigate.
+    // If this button needed to do something else, we'd use router.push here.
+  }
+
+  const truncatedDescription = project.description.length > 100 
+    ? `${project.description.substring(0, 100)}...`
+    : project.description;
+
   if (loading) {
       return (
         <Card className="h-full flex flex-col">
@@ -81,7 +96,8 @@ export function ProjectCard({ project, allUsers }: ProjectCardProps) {
                 <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
             </CardHeader>
             <CardContent className='flex-grow'>
-                <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-full animate-pulse mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
             </CardContent>
             <CardFooter>
                  <div className="h-8 bg-gray-200 rounded w-1/2 animate-pulse"></div>
@@ -92,14 +108,21 @@ export function ProjectCard({ project, allUsers }: ProjectCardProps) {
 
   return (
     <>
-    <Link href={`/projects/${project.id}`}>
-      <Card className="h-full flex flex-col hover:border-primary hover:shadow-md transition-all">
+    <Link href={`/projects/${project.id}`} className="flex">
+      <Card className="h-full flex flex-col w-full hover:border-primary hover:shadow-md transition-all">
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle className="font-headline text-xl mb-2 pr-8">{project.name}</CardTitle>
-            <div className="flex items-center gap-2">
+            <CardTitle className="font-headline text-xl mb-2 pr-4">{project.name}</CardTitle>
+            <div className="flex items-center gap-2 flex-shrink-0">
                 {isCompleted ? (
-                     <Badge className="bg-primary text-primary-foreground hover:bg-primary">Completado</Badge>
+                    userHasGivenFeedback ? (
+                      <Badge className="bg-primary text-primary-foreground hover:bg-primary">Completado</Badge>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={handleFeedbackClick}>
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        Enviar Feedback
+                      </Button>
+                    )
                 ) : (
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEditClick} disabled={isCompleted}>
                         <Edit className="h-4 w-4" />
@@ -107,7 +130,7 @@ export function ProjectCard({ project, allUsers }: ProjectCardProps) {
                 )}
             </div>
           </div>
-          <CardDescription>{project.description}</CardDescription>
+          <CardDescription className="text-sm">{truncatedDescription}</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow space-y-4">
           <div>
