@@ -81,6 +81,7 @@ export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: C
         dueDate: format(data.dueDate, 'PPP', { locale: es }),
         memberIds: data.memberIds,
         ownerId: currentUser.uid,
+        status: 'in-progress',
         createdAt: serverTimestamp(),
       });
       toast({ title: '¡Éxito!', description: 'El proyecto se ha creado correctamente.' });

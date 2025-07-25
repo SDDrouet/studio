@@ -3,27 +3,33 @@
 
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import type { Project, Task, User } from '@/lib/data';
+import type { Project, Task, User, Feedback } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TeamMembers } from '@/components/team-members';
-import { Calendar, CheckCircle, PlusCircle, Rocket } from 'lucide-react';
+import { Calendar, CheckCircle, PlusCircle, Rocket, Star } from 'lucide-react';
 import { TaskCard } from '@/components/task-card';
 import { db } from '@/lib/firebase';
-import { collection, doc, onSnapshot, query, where, updateDoc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
 import { CreateTaskDialog } from '@/components/create-task-dialog';
+import { CompleteProjectDialog } from '@/components/complete-project-dialog';
+import { useAuth } from '@/context/auth-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const { user: currentUser } = useAuth();
   
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<User[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
+  const [isCompleteProjectDialogOpen, setCompleteProjectDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -39,8 +45,6 @@ export default function ProjectPage() {
         // Fetch members
         if (projectData.memberIds && projectData.memberIds.length > 0) {
           const usersRef = collection(db, 'users');
-          // Firestore 'in' queries are limited to 10 items. For more, chunk the array.
-          // For this app, we assume member count is < 10.
           const membersQuery = query(usersRef, where('uid', 'in', projectData.memberIds));
           const membersSnapshot = await getDocs(membersQuery);
           const projectMembers = membersSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
@@ -53,17 +57,26 @@ export default function ProjectPage() {
     });
 
     const tasksRef = collection(db, 'tasks');
-    const q = query(tasksRef, where('projectId', '==', projectId));
+    const tasksQuery = query(tasksRef, where('projectId', '==', projectId));
 
-    const unsubscribeTasks = onSnapshot(q, (snapshot) => {
+    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
         const projectTasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Task));
         setTasks(projectTasks.sort((a,b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1));
+    });
+
+    const feedbackRef = collection(db, 'feedback');
+    const feedbackQuery = query(feedbackRef, where('projectId', '==', projectId));
+    const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+        const projectFeedback = snapshot.docs.map(doc => doc.data() as Feedback);
+        setFeedback(projectFeedback);
         setLoading(false);
     });
+
 
     return () => {
       unsubscribeProject();
       unsubscribeTasks();
+      unsubscribeFeedback();
     }
   }, [projectId]);
 
@@ -89,6 +102,14 @@ export default function ProjectPage() {
     };
   }, [tasks]);
 
+  const userHasGivenFeedback = useMemo(() => {
+      return feedback.some(f => f.userId === currentUser?.uid);
+  }, [feedback, currentUser]);
+  
+  const getMemberByUid = (uid: string) => {
+      return members.find(m => m.uid === uid);
+  }
+
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -96,6 +117,8 @@ export default function ProjectPage() {
   if (!project) {
     return notFound();
   }
+
+  const isProjectCompleted = project.status === 'completed';
 
   return (
     <>
@@ -111,13 +134,13 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCreateTaskDialogOpen(true)}>
+              <Button variant="outline" onClick={() => setCreateTaskDialogOpen(true)} disabled={isProjectCompleted}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Añadir Tarea
               </Button>
-              <Button disabled={!allTasksCompleted}>
+              <Button onClick={() => setCompleteProjectDialogOpen(true)} disabled={!allTasksCompleted || isProjectCompleted || userHasGivenFeedback}>
                   <Rocket className="mr-2 h-4 w-4" />
-                  Completar Proyecto
+                  { isProjectCompleted ? 'Proyecto Completado' : userHasGivenFeedback ? 'Feedback Enviado' : 'Completar Proyecto' }
               </Button>
           </div>
         </div>
@@ -153,15 +176,19 @@ export default function ProjectPage() {
               <TeamMembers users={members} />
             </CardContent>
           </Card>
-          <Card className={allTasksCompleted ? 'border-accent' : ''}>
+          <Card className={isProjectCompleted ? 'border-primary' : ''}>
             <CardHeader>
               <CardTitle className="text-lg font-headline">Estado del Proyecto</CardTitle>
             </CardHeader>
             <CardContent>
-              {allTasksCompleted ? (
+              {isProjectCompleted ? (
                   <div className="flex items-center gap-2">
-                      <Badge className="bg-accent text-accent-foreground hover:bg-accent">Completado</Badge>
-                      <p className="text-sm text-muted-foreground">¡Listo para revisión!</p>
+                      <Badge className="bg-primary text-primary-foreground hover:bg-primary">Completado</Badge>
+                      <p className="text-sm text-muted-foreground">¡Gran trabajo!</p>
+                  </div>
+              ) : allTasksCompleted ? (
+                  <div className="flex items-center gap-2">
+                      <Badge className="bg-accent text-accent-foreground hover:bg-accent">Listo para Revisión</Badge>
                   </div>
               ) : (
                   <Badge variant="secondary">En Progreso</Badge>
@@ -170,23 +197,73 @@ export default function ProjectPage() {
           </Card>
         </div>
         
+        {isProjectCompleted && feedback.length > 0 && (
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Retroalimentación del Equipo</h2>
+                <div className="space-y-4">
+                    {feedback.map(fb => {
+                        const member = getMemberByUid(fb.userId);
+                        return (
+                            <Card key={fb.id}>
+                                <CardContent className="p-6">
+                                    <div className="flex items-start gap-4">
+                                        <Avatar>
+                                            <AvatarImage src={member?.avatar} />
+                                            <AvatarFallback>{member?.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-center">
+                                                <p className="font-semibold">{member?.name}</p>
+                                                <div className="flex items-center gap-1">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} className={`h-5 w-5 ${i < fb.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <p className="text-muted-foreground mt-2 italic">&quot;{fb.comment}&quot;</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </div>
+            </div>
+        )}
+
         {/* Task List */}
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
-          <div className="space-y-4">
-              {tasks.map(task => (
-                  <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
-              ))}
-              {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
-          </div>
-        </div>
+        {!isProjectCompleted && (
+            <div>
+            <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
+            <div className="space-y-4">
+                {tasks.map(task => (
+                    <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
+                ))}
+                {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
+            </div>
+            </div>
+        )}
       </div>
-      <CreateTaskDialog 
-        isOpen={isCreateTaskDialogOpen}
-        setIsOpen={setCreateTaskDialogOpen}
-        project={project}
-        members={members}
-      />
+
+      {!isProjectCompleted && (
+          <CreateTaskDialog 
+            isOpen={isCreateTaskDialogOpen}
+            setIsOpen={setCreateTaskDialogOpen}
+            project={project}
+            members={members}
+          />
+      )}
+
+      {currentUser && (
+        <CompleteProjectDialog
+            isOpen={isCompleteProjectDialogOpen}
+            setIsOpen={setCompleteProjectDialogOpen}
+            project={project}
+            currentUser={currentUser}
+            teamSize={members.length}
+            currentFeedbackCount={feedback.length}
+        />
+      )}
     </>
   );
 }

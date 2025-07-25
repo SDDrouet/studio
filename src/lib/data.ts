@@ -24,9 +24,17 @@ export type Project = {
   description: string;
   dueDate: string;
   memberIds: string[]; // Storing user UIDs
-  observations?: string;
-  // Tasks are now a sub-collection, so not stored directly on the project document
+  status: 'in-progress' | 'completed';
 };
+
+export type Feedback = {
+  id: string;
+  projectId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: any; // serverTimestamp
+}
 
 // Mock data is no longer the source of truth.
 // The data will be fetched from Firestore.
