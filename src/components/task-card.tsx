@@ -12,9 +12,10 @@ import { doc, getDoc, collection, query, where, getDocs } from "firebase/firesto
 interface TaskCardProps {
     task: Task;
     onTaskCompletionChange: (taskId: string, completed: boolean) => void;
+    isProjectCompleted: boolean;
 }
 
-export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
+export function TaskCard({ task, onTaskCompletionChange, isProjectCompleted }: TaskCardProps) {
     const [assignee, setAssignee] = useState<User | null>(null);
 
     useEffect(() => {
@@ -42,6 +43,7 @@ export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
                     checked={task.completed}
                     onCheckedChange={(checked) => onTaskCompletionChange(task.id, !!checked)}
                     className="mt-1"
+                    disabled={isProjectCompleted}
                 />
                 <div className="flex-1 grid gap-1.5">
                     <div className={`font-semibold ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</div>

@@ -42,8 +42,6 @@ interface CompleteProjectDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   project: Project;
   currentUser: FirebaseUser;
-  teamSize: number;
-  currentFeedbackCount: number;
 }
 
 export function CompleteProjectDialog({ 
@@ -51,8 +49,6 @@ export function CompleteProjectDialog({
     setIsOpen, 
     project, 
     currentUser, 
-    teamSize, 
-    currentFeedbackCount 
 }: CompleteProjectDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -76,13 +72,13 @@ export function CompleteProjectDialog({
         createdAt: serverTimestamp(),
       });
       
-      // Check if all members have given feedback
-      if (currentFeedbackCount + 1 === teamSize) {
+      // If project is not already completed, mark it as completed
+      if (project.status !== 'completed') {
         const projectRef = doc(db, 'projects', project.id);
         await updateDoc(projectRef, {
           status: 'completed',
         });
-        toast({ title: '¡Proyecto completado!', description: 'Todos los miembros han enviado su retroalimentación.' });
+        toast({ title: '¡Proyecto completado!', description: 'Gracias por tu retroalimentación.' });
       } else {
         toast({ title: '¡Gracias por tu feedback!', description: 'Tu retroalimentación ha sido guardada.' });
       }

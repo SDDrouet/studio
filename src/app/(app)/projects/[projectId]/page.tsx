@@ -82,6 +82,7 @@ export default function ProjectPage() {
   }, [projectId]);
 
   const handleTaskCompletionChange = async (taskId: string, completed: boolean) => {
+    if (project?.status === 'completed') return;
     const taskRef = doc(db, 'tasks', taskId);
     try {
         await updateDoc(taskRef, { completed });
@@ -121,6 +122,13 @@ export default function ProjectPage() {
 
   const isProjectCompleted = project.status === 'completed';
 
+  const completeButtonText = () => {
+    if (isProjectCompleted) {
+        return userHasGivenFeedback ? 'Feedback Enviado' : 'Enviar Retroalimentación';
+    }
+    return 'Completar Proyecto';
+  };
+
   return (
     <>
       <div className="space-y-8">
@@ -139,9 +147,9 @@ export default function ProjectPage() {
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Añadir Tarea
               </Button>
-              <Button onClick={() => setCompleteProjectDialogOpen(true)} disabled={!allTasksCompleted || isProjectCompleted || userHasGivenFeedback}>
+              <Button onClick={() => setCompleteProjectDialogOpen(true)} disabled={(!allTasksCompleted && !isProjectCompleted) || userHasGivenFeedback}>
                   <Rocket className="mr-2 h-4 w-4" />
-                  { isProjectCompleted ? 'Proyecto Completado' : userHasGivenFeedback ? 'Feedback Enviado' : 'Completar Proyecto' }
+                  {completeButtonText()}
               </Button>
           </div>
         </div>
@@ -241,17 +249,15 @@ export default function ProjectPage() {
         )}
 
         {/* Task List */}
-        {!isProjectCompleted && (
-            <div>
-            <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
-            <div className="space-y-4">
-                {tasks.map(task => (
-                    <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
-                ))}
-                {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
-            </div>
-            </div>
-        )}
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
+          <div className="space-y-4">
+              {tasks.map(task => (
+                  <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} isProjectCompleted={isProjectCompleted} />
+              ))}
+              {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
+          </div>
+        </div>
       </div>
 
       {!isProjectCompleted && (
@@ -269,8 +275,6 @@ export default function ProjectPage() {
             setIsOpen={setCompleteProjectDialogOpen}
             project={project}
             currentUser={currentUser}
-            teamSize={members.length}
-            currentFeedbackCount={feedback.length}
         />
       )}
     </>
