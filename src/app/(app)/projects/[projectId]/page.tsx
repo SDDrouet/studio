@@ -2,8 +2,7 @@
 
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import type { Project, Task } from '@/lib/data';
-import { findProjectById } from '@/lib/data';
+import type { Project, Task, User } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -11,26 +10,65 @@ import { Badge } from '@/components/ui/badge';
 import { TeamMembers } from '@/components/team-members';
 import { Calendar, CheckCircle, PlusCircle, Rocket } from 'lucide-react';
 import { TaskCard } from '@/components/task-card';
+import { db } from '@/lib/firebase';
+import { collection, doc, onSnapshot, query, where, updateDoc, getDoc, getDocs } from 'firebase/firestore';
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.projectId as string;
   
-  const [project, setProject] = useState<Project | undefined>(undefined);
+  const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const foundProject = findProjectById(projectId);
-    setProject(foundProject);
-    setTasks(foundProject ? foundProject.tasks : []);
+    if (!projectId) return;
+
+    setLoading(true);
+    const projectRef = doc(db, 'projects', projectId);
+    
+    const unsubscribeProject = onSnapshot(projectRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
+        setProject(projectData);
+
+        // Fetch members
+        if (projectData.memberIds && projectData.memberIds.length > 0) {
+          const usersRef = collection(db, 'users');
+          const membersQuery = query(usersRef, where('uid', 'in', projectData.memberIds));
+          const membersSnapshot = await getDocs(membersQuery);
+          const projectMembers = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+          setMembers(projectMembers);
+        }
+
+      } else {
+        notFound();
+      }
+    });
+
+    const tasksRef = collection(db, 'tasks');
+    const q = query(tasksRef, where('projectId', '==', projectId));
+
+    const unsubscribeTasks = onSnapshot(q, (snapshot) => {
+        const projectTasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Task));
+        setTasks(projectTasks);
+        setLoading(false);
+    });
+
+    return () => {
+      unsubscribeProject();
+      unsubscribeTasks();
+    }
   }, [projectId]);
 
-  const handleTaskCompletionChange = (taskId: string, completed: boolean) => {
-    setTasks(currentTasks => 
-        currentTasks.map(task => 
-            task.id === taskId ? { ...task, completed } : task
-        )
-    );
+  const handleTaskCompletionChange = async (taskId: string, completed: boolean) => {
+    const taskRef = doc(db, 'tasks', taskId);
+    try {
+        await updateDoc(taskRef, { completed });
+    } catch(error) {
+        console.error("Error updating task: ", error);
+    }
   };
 
   const { completedTasks, totalTasks, progress, allTasksCompleted } = useMemo(() => {
@@ -46,9 +84,12 @@ export default function ProjectPage() {
     };
   }, [tasks]);
 
-  if (!project) {
-    // In a real app, you'd show a loading skeleton
+  if (loading) {
     return <div>Cargando...</div>;
+  }
+  
+  if (!project) {
+    return notFound();
   }
 
   return (
@@ -103,7 +144,7 @@ export default function ProjectPage() {
             <CardDescription>Personas colaborando en este proyecto.</CardDescription>
           </CardHeader>
           <CardContent>
-            <TeamMembers users={project.members} />
+            <TeamMembers users={members} />
           </CardContent>
         </Card>
         <Card className={allTasksCompleted ? 'border-accent' : ''}>

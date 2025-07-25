@@ -1,9 +1,12 @@
-import type { Task } from "@/lib/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Task, User } from "@/lib/data";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Badge } from "./ui/badge";
+import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 interface TaskCardProps {
     task: Task;
@@ -11,6 +14,21 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
+    const [assignee, setAssignee] = useState<User | null>(null);
+
+    useEffect(() => {
+        const fetchAssignee = async () => {
+            if (task.assigneeId) {
+                const userDoc = await getDoc(doc(db, 'users', task.assigneeId));
+                if (userDoc.exists()) {
+                    setAssignee({ id: userDoc.id, ...userDoc.data() } as User);
+                }
+            }
+        };
+        fetchAssignee();
+    }, [task.assigneeId]);
+
+
     return (
         <Card className={`transition-all ${task.completed ? 'bg-muted/50' : ''}`}>
             <CardHeader className="flex flex-row items-start gap-4 space-y-0 p-4">
@@ -21,22 +39,22 @@ export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
                     className="mt-1"
                 />
                 <div className="flex-1 grid gap-1.5">
-                    <CardTitle className={`text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</CardTitle>
-                    <CardDescription className={`${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                    <div className={`text-lg font-semibold ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.title}</div>
+                    <p className={`text-sm text-muted-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.description}
-                    </CardDescription>
+                    </p>
                 </div>
-                {task.assignee && (
+                {assignee && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger>
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} />
-                                    <AvatarFallback>{task.assignee.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Asignado a {task.assignee.name}</p>
+                                <p>Asignado a {assignee.name}</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>

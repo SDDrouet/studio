@@ -1,9 +1,45 @@
+'use client';
+
+import { useAuth } from '@/context/auth-context';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { projects } from '@/lib/data';
 import { ProjectCard } from '@/components/project-card';
+import type { Project } from '@/lib/data';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
+    const projectsRef = collection(db, 'projects');
+    const q = query(projectsRef, where('memberIds', 'array-contains', user.uid));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const userProjects: Project[] = [];
+      querySnapshot.forEach((doc) => {
+        userProjects.push({ id: doc.id, ...doc.data() } as Project);
+      });
+      setProjects(userProjects);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching projects: ", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  if (loading) {
+    return <div>Cargando proyectos...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -17,11 +53,15 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+      {projects.length > 0 ? (
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      ) : (
+        <p>No se encontraron proyectos. ¡Crea uno para empezar!</p>
+      )}
     </div>
   );
 }

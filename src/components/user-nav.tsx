@@ -11,26 +11,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function UserNav() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://i.pravatar.cc/150?u=user-1" alt="Usuario" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
+            <AvatarFallback>{user.displayName ? user.displayName.charAt(0) : user.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Alice Johnson</p>
+            <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              alice@example.com
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -38,7 +52,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
+              <UserIcon className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </Link>
           </DropdownMenuItem>
@@ -48,11 +62,9 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Cerrar Sesión</span>
-          </Link>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Cerrar Sesión</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

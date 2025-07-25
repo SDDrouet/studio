@@ -1,3 +1,8 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
 import { Header } from '@/components/header';
 import { Icons } from '@/components/icons';
 import { MainNav } from '@/components/main-nav';
@@ -6,6 +11,19 @@ import { UserNav } from '@/components/user-nav';
 import Link from 'next/link';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return <div>Cargando...</div>; // O un componente de carga más elaborado
+  }
+  
   return (
     <SidebarProvider>
       <Sidebar className="border-r">
