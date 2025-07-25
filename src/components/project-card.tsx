@@ -79,10 +79,7 @@ export function ProjectCard({ project, allUsers, currentUser }: ProjectCardProps
   }
 
   const handleFeedbackClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Since the whole card is a link, we just let the default behavior navigate.
-    // If this button needed to do something else, we'd use router.push here.
+    // No longer preventing default, allowing the link to navigate.
   }
 
   const truncatedDescription = project.description.length > 100 
