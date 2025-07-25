@@ -16,17 +16,17 @@ export function MainNav() {
   const menuItems = [
     {
       href: '/dashboard',
-      label: 'Dashboard',
+      label: 'Panel',
       icon: LayoutDashboard,
     },
     {
       href: '/suggestions',
-      label: 'AI Suggestions',
+      label: 'Sugerencias IA',
       icon: MessageSquareQuote,
     },
     {
       href: '/profile',
-      label: 'Profile',
+      label: 'Perfil',
       icon: UserCircle,
     },
   ];

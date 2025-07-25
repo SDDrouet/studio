@@ -36,7 +36,7 @@ export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
                                 </Avatar>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Assigned to {task.assignee.name}</p>
+                                <p>Asignado a {task.assignee.name}</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -44,7 +44,7 @@ export function TaskCard({ task, onTaskCompletionChange }: TaskCardProps) {
             </CardHeader>
             <CardContent className="p-4 pt-0">
                 <Badge variant={task.completed ? "secondary" : "outline"} className="text-xs">
-                    Due: {task.dueDate}
+                    Vence: {task.dueDate}
                 </Badge>
             </CardContent>
         </Card>

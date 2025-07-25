@@ -11,12 +11,12 @@ export function Header() {
       </div>
       <div className="flex-1">
         {/* Can be replaced with dynamic breadcrumbs */}
-        <h1 className="text-lg font-semibold font-headline">Dashboard</h1>
+        <h1 className="text-lg font-semibold font-headline">Panel</h1>
       </div>
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
-          <span className="sr-only">Toggle notifications</span>
+          <span className="sr-only">Alternar notificaciones</span>
         </Button>
         <UserNav />
       </div>

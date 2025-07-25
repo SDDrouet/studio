@@ -10,10 +10,10 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Your Profile</h1>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Tu Perfil</h1>
             <Button variant="outline">
                 <Edit className="mr-2 h-4 w-4" />
-                Edit Profile
+                Editar Perfil
             </Button>
         </div>
       
@@ -34,21 +34,21 @@ export default function ProfilePage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Work Preferences</CardTitle>
-          <CardDescription>How you like to work with your team.</CardDescription>
+          <CardTitle>Preferencias de Trabajo</CardTitle>
+          <CardDescription>Cómo te gusta trabajar con tu equipo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex items-start gap-4">
                 <Clock className="h-5 w-5 text-primary mt-1" />
                 <div>
-                    <h3 className="font-semibold">Timezone</h3>
+                    <h3 className="font-semibold">Zona Horaria</h3>
                     <p className="text-muted-foreground">{user.timezone}</p>
                 </div>
             </div>
             <div className="flex items-start gap-4">
                 <UserCircle className="h-5 w-5 text-primary mt-1" />
                 <div>
-                    <h3 className="font-semibold">Communication & Work Style</h3>
+                    <h3 className="font-semibold">Comunicación y Estilo de Trabajo</h3>
                     <p className="text-muted-foreground">{user.workStyle}</p>
                 </div>
             </div>

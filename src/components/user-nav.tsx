@@ -20,7 +20,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://i.pravatar.cc/150?u=user-1" alt="User" />
+            <AvatarImage src="https://i.pravatar.cc/150?u=user-1" alt="Usuario" />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
         </Button>
@@ -39,19 +39,19 @@ export function UserNav() {
           <DropdownMenuItem asChild>
             <Link href="/profile">
               <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>Perfil</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>Configuración</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/login">
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
+            <span>Cerrar Sesión</span>
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

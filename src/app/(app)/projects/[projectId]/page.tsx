@@ -48,7 +48,7 @@ export default function ProjectPage() {
 
   if (!project) {
     // In a real app, you'd show a loading skeleton
-    return <div>Loading...</div>;
+    return <div>Cargando...</div>;
   }
 
   return (
@@ -60,17 +60,17 @@ export default function ProjectPage() {
           <p className="text-muted-foreground mt-1">{project.description}</p>
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>Due on {project.dueDate}</span>
+            <span>Vence el {project.dueDate}</span>
           </div>
         </div>
         <div className="flex gap-2">
             <Button variant="outline">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Task
+                Añadir Tarea
             </Button>
             <Button disabled={!allTasksCompleted}>
                 <Rocket className="mr-2 h-4 w-4" />
-                Complete Project
+                Completar Proyecto
             </Button>
         </div>
       </div>
@@ -79,28 +79,28 @@ export default function ProjectPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-headline">Project Progress</CardTitle>
+            <CardTitle className="text-lg font-headline">Progreso del Proyecto</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Completion</span>
+                        <span className="text-sm font-medium text-muted-foreground">Completado</span>
                         <span className="text-sm font-bold">{Math.round(progress)}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
                 </div>
                 <div className="flex items-center text-sm">
                     <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                    <span>{completedTasks} of {totalTasks} tasks completed</span>
+                    <span>{completedTasks} de {totalTasks} tareas completadas</span>
                 </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-headline">Team Members</CardTitle>
-            <CardDescription>People collaborating on this project.</CardDescription>
+            <CardTitle className="text-lg font-headline">Miembros del Equipo</CardTitle>
+            <CardDescription>Personas colaborando en este proyecto.</CardDescription>
           </CardHeader>
           <CardContent>
             <TeamMembers users={project.members} />
@@ -108,16 +108,16 @@ export default function ProjectPage() {
         </Card>
         <Card className={allTasksCompleted ? 'border-accent' : ''}>
           <CardHeader>
-            <CardTitle className="text-lg font-headline">Project Status</CardTitle>
+            <CardTitle className="text-lg font-headline">Estado del Proyecto</CardTitle>
           </CardHeader>
           <CardContent>
             {allTasksCompleted ? (
                 <div className="flex items-center gap-2">
-                    <Badge className="bg-accent text-accent-foreground hover:bg-accent">Completed</Badge>
-                    <p className="text-sm text-muted-foreground">Ready for review!</p>
+                    <Badge className="bg-accent text-accent-foreground hover:bg-accent">Completado</Badge>
+                    <p className="text-sm text-muted-foreground">¡Listo para revisión!</p>
                 </div>
             ) : (
-                <Badge variant="secondary">In Progress</Badge>
+                <Badge variant="secondary">En Progreso</Badge>
             )}
           </CardContent>
         </Card>
@@ -125,12 +125,12 @@ export default function ProjectPage() {
       
       {/* Task List */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tasks</h2>
+        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
         <div className="space-y-4">
             {tasks.map(task => (
                 <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
             ))}
-            {tasks.length === 0 && <p className="text-muted-foreground">No tasks have been added to this project yet.</p>}
+            {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
         </div>
       </div>
     </div>

@@ -22,8 +22,8 @@ export default function SuggestionsPage() {
     e.preventDefault();
     if (!text.trim()) {
       toast({
-        title: 'Input required',
-        description: 'Please enter some text to analyze.',
+        title: 'Entrada requerida',
+        description: 'Por favor, introduce algo de texto para analizar.',
         variant: 'destructive',
       });
       return;
@@ -36,10 +36,10 @@ export default function SuggestionsPage() {
       const result = await avoidMisunderstandingSuggestions({ text });
       setSuggestions(result);
     } catch (error) {
-      console.error('AI suggestion error:', error);
+      console.error('Error de sugerencia de IA:', error);
       toast({
-        title: 'An error occurred',
-        description: 'Failed to get suggestions from the AI. Please try again.',
+        title: 'Ocurrió un error',
+        description: 'No se pudieron obtener sugerencias de la IA. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -50,21 +50,21 @@ export default function SuggestionsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">AI Communication Assistant</h1>
-        <p className="text-muted-foreground mt-2">Write clearer messages and avoid misunderstandings.</p>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Asistente de Comunicación IA</h1>
+        <p className="text-muted-foreground mt-2">Escribe mensajes más claros y evita malentendidos.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Analyze Your Text</CardTitle>
+          <CardTitle>Analiza tu Texto</CardTitle>
           <CardDescription>
-            Enter a message, email, or any text below. Our AI will suggest improvements for clarity.
+            Introduce un mensaje, correo electrónico o cualquier texto a continuación. Nuestra IA sugerirá mejoras para mayor claridad.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent>
             <Textarea
-              placeholder="e.g., Let's table this discussion ASAP."
+              placeholder="Ej.: Dejemos esto en la mesa ASAP."
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={6}
@@ -76,10 +76,10 @@ export default function SuggestionsPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  Analizando...
                 </>
               ) : (
-                'Get Suggestions'
+                'Obtener Sugerencias'
               )}
             </Button>
           </CardContent>
@@ -91,24 +91,24 @@ export default function SuggestionsPage() {
           {suggestions.suggestions.length === 0 ? (
             <Alert>
               <Lightbulb className="h-4 w-4" />
-              <AlertTitle>Looks Good!</AlertTitle>
+              <AlertTitle>¡Se ve bien!</AlertTitle>
               <AlertDescription>
-                Our AI didn't find any common phrases that might cause misunderstanding in your text.
+                Nuestra IA no encontró frases comunes que pudieran causar malentendidos en tu texto.
               </AlertDescription>
             </Alert>
           ) : (
             <>
-            <h2 className="text-2xl font-bold font-headline">Suggestions</h2>
+            <h2 className="text-2xl font-bold font-headline">Sugerencias</h2>
             {suggestions.suggestions.map((suggestion, index) => (
               <Card key={index}>
                 <CardHeader>
-                  <CardDescription>Suggestion #{index + 1}</CardDescription>
+                  <CardDescription>Sugerencia #{index + 1}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <ThumbsDown className="h-5 w-5 text-destructive" />
-                        <h3 className="font-semibold">Phrase to Avoid</h3>
+                        <h3 className="font-semibold">Frase a Evitar</h3>
                     </div>
                     <p className="text-muted-foreground p-3 bg-muted rounded-md italic">
                       &quot;{suggestion.phraseToAvoid}&quot;
@@ -117,7 +117,7 @@ export default function SuggestionsPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <ThumbsUp className="h-5 w-5 text-green-500" />
-                        <h3 className="font-semibold">Suggested Alternative</h3>
+                        <h3 className="font-semibold">Alternativa Sugerida</h3>
                     </div>
                     <p className="text-foreground p-3 bg-green-500/10 rounded-md italic">
                       &quot;{suggestion.suggestedAlternative}&quot;
@@ -126,7 +126,7 @@ export default function SuggestionsPage() {
                   <div className="md:col-span-2 space-y-2">
                     <div className="flex items-center gap-2">
                         <Lightbulb className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold">Reason</h3>
+                        <h3 className="font-semibold">Razón</h3>
                     </div>
                     <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
                   </div>

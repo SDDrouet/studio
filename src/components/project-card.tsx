@@ -28,15 +28,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <CardContent className="flex-grow">
           <div>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Progress</span>
-              <span className="text-sm text-muted-foreground">{completedTasks} / {totalTasks} tasks</span>
+              <span className="text-sm font-medium">Progreso</span>
+              <span className="text-sm text-muted-foreground">{completedTasks} / {totalTasks} tareas</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center">
           <TeamMembers users={project.members} />
-          <Badge variant="outline">Due: {project.dueDate}</Badge>
+          <Badge variant="outline">Vence: {project.dueDate}</Badge>
         </CardFooter>
       </Card>
     </Link>

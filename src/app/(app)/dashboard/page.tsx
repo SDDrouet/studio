@@ -8,12 +8,12 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight font-headline">Projects</h2>
-          <p className="text-muted-foreground">Here are the projects your team is working on.</p>
+          <h2 className="text-2xl font-bold tracking-tight font-headline">Proyectos</h2>
+          <p className="text-muted-foreground">Aquí están los proyectos en los que tu equipo está trabajando.</p>
         </div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Create Project
+          Crear Proyecto
         </Button>
       </div>
 

@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="mb-6 flex justify-center">
             <Link href="/" className="flex items-center gap-2">
                 <Icons.logo className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold font-headline">CollabTask</span>
+                <span className="text-2xl font-bold font-headline">TareaColab</span>
             </Link>
         </div>
         {children}

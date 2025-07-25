@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="p-4 flex items-center gap-2">
             <Link href="/dashboard" className="flex items-center gap-2">
               <Icons.logo className="h-8 w-8 text-primary" />
-              <h1 className="text-xl font-bold font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">CollabTask</h1>
+              <h1 className="text-xl font-bold font-headline text-sidebar-foreground group-data-[collapsible=icon]:hidden">TareaColab</h1>
             </Link>
           </SidebarHeader>
           <SidebarContent>
