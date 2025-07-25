@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -12,6 +13,7 @@ import { Calendar, CheckCircle, PlusCircle, Rocket } from 'lucide-react';
 import { TaskCard } from '@/components/task-card';
 import { db } from '@/lib/firebase';
 import { collection, doc, onSnapshot, query, where, updateDoc, getDoc, getDocs } from 'firebase/firestore';
+import { CreateTaskDialog } from '@/components/create-task-dialog';
 
 export default function ProjectPage() {
   const params = useParams();
@@ -21,6 +23,7 @@ export default function ProjectPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -36,9 +39,11 @@ export default function ProjectPage() {
         // Fetch members
         if (projectData.memberIds && projectData.memberIds.length > 0) {
           const usersRef = collection(db, 'users');
+          // Firestore 'in' queries are limited to 10 items. For more, chunk the array.
+          // For this app, we assume member count is < 10.
           const membersQuery = query(usersRef, where('uid', 'in', projectData.memberIds));
           const membersSnapshot = await getDocs(membersQuery);
-          const projectMembers = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+          const projectMembers = membersSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
           setMembers(projectMembers);
         }
 
@@ -52,7 +57,7 @@ export default function ProjectPage() {
 
     const unsubscribeTasks = onSnapshot(q, (snapshot) => {
         const projectTasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Task));
-        setTasks(projectTasks);
+        setTasks(projectTasks.sort((a,b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1));
         setLoading(false);
     });
 
@@ -93,87 +98,95 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Project Header */}
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">{project.name}</h1>
-          <p className="text-muted-foreground mt-1">{project.description}</p>
-          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>Vence el {project.dueDate}</span>
+    <>
+      <div className="space-y-8">
+        {/* Project Header */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">{project.name}</h1>
+            <p className="text-muted-foreground mt-1">{project.description}</p>
+            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Vence el {project.dueDate}</span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setCreateTaskDialogOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Añadir Tarea
+              </Button>
+              <Button disabled={!allTasksCompleted}>
+                  <Rocket className="mr-2 h-4 w-4" />
+                  Completar Proyecto
+              </Button>
           </div>
         </div>
-        <div className="flex gap-2">
-            <Button variant="outline">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Añadir Tarea
-            </Button>
-            <Button disabled={!allTasksCompleted}>
-                <Rocket className="mr-2 h-4 w-4" />
-                Completar Proyecto
-            </Button>
-        </div>
-      </div>
 
-      {/* Project Details Grid */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-headline">Progreso del Proyecto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Completado</span>
-                        <span className="text-sm font-bold">{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                </div>
-                <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                    <span>{completedTasks} de {totalTasks} tareas completadas</span>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-headline">Miembros del Equipo</CardTitle>
-            <CardDescription>Personas colaborando en este proyecto.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TeamMembers users={members} />
-          </CardContent>
-        </Card>
-        <Card className={allTasksCompleted ? 'border-accent' : ''}>
-          <CardHeader>
-            <CardTitle className="text-lg font-headline">Estado del Proyecto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {allTasksCompleted ? (
-                <div className="flex items-center gap-2">
-                    <Badge className="bg-accent text-accent-foreground hover:bg-accent">Completado</Badge>
-                    <p className="text-sm text-muted-foreground">¡Listo para revisión!</p>
-                </div>
-            ) : (
-                <Badge variant="secondary">En Progreso</Badge>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Task List */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
-        <div className="space-y-4">
-            {tasks.map(task => (
-                <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
-            ))}
-            {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
+        {/* Project Details Grid */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-headline">Progreso del Proyecto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                  <div>
+                      <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-muted-foreground">Completado</span>
+                          <span className="text-sm font-bold">{Math.round(progress)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                  </div>
+                  <div className="flex items-center text-sm">
+                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                      <span>{completedTasks} de {totalTasks} tareas completadas</span>
+                  </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-headline">Miembros del Equipo</CardTitle>
+              <CardDescription>Personas colaborando en este proyecto.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TeamMembers users={members} />
+            </CardContent>
+          </Card>
+          <Card className={allTasksCompleted ? 'border-accent' : ''}>
+            <CardHeader>
+              <CardTitle className="text-lg font-headline">Estado del Proyecto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allTasksCompleted ? (
+                  <div className="flex items-center gap-2">
+                      <Badge className="bg-accent text-accent-foreground hover:bg-accent">Completado</Badge>
+                      <p className="text-sm text-muted-foreground">¡Listo para revisión!</p>
+                  </div>
+              ) : (
+                  <Badge variant="secondary">En Progreso</Badge>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Task List */}
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
+          <div className="space-y-4">
+              {tasks.map(task => (
+                  <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} />
+              ))}
+              {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
+          </div>
         </div>
       </div>
-    </div>
+      <CreateTaskDialog 
+        isOpen={isCreateTaskDialogOpen}
+        setIsOpen={setCreateTaskDialogOpen}
+        project={project}
+        members={members}
+      />
+    </>
   );
 }

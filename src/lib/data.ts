@@ -15,7 +15,7 @@ export type Task = {
   description:string;
   dueDate: string;
   completed: boolean;
-  assigneeId?: string; // Storing user doc ID
+  assigneeId: string | null; // Storing user doc ID
 };
 
 export type Project = {
