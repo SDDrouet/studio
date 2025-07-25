@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TeamMembers } from '@/components/team-members';
-import { Calendar, CheckCircle, PlusCircle, Rocket, Star } from 'lucide-react';
+import { Calendar, CheckCircle, Eye, PlusCircle, Rocket, Star } from 'lucide-react';
 import { TaskCard } from '@/components/task-card';
 import { db } from '@/lib/firebase';
 import { collection, doc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
@@ -30,6 +30,7 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [isCreateTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
   const [isCompleteProjectDialogOpen, setCompleteProjectDialogOpen] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -199,35 +200,43 @@ export default function ProjectPage() {
         
         {isProjectCompleted && feedback.length > 0 && (
             <div>
-                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Retroalimentación del Equipo</h2>
-                <div className="space-y-4">
-                    {feedback.map(fb => {
-                        const member = getMemberByUid(fb.userId);
-                        return (
-                            <Card key={fb.id}>
-                                <CardContent className="p-6">
-                                    <div className="flex items-start gap-4">
-                                        <Avatar>
-                                            <AvatarImage src={member?.avatar} />
-                                            <AvatarFallback>{member?.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center">
-                                                <p className="font-semibold">{member?.name}</p>
-                                                <div className="flex items-center gap-1">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} className={`h-5 w-5 ${i < fb.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-muted-foreground mt-2 italic">&quot;{fb.comment}&quot;</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold tracking-tight font-headline">Retroalimentación del Equipo</h2>
+                    <Button variant="outline" onClick={() => setShowFeedback(!showFeedback)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        {showFeedback ? 'Ocultar' : 'Mostrar'} Retroalimentación
+                    </Button>
                 </div>
+                {showFeedback && (
+                    <div className="space-y-4">
+                        {feedback.map(fb => {
+                            const member = getMemberByUid(fb.userId);
+                            return (
+                                <Card key={fb.id}>
+                                    <CardContent className="p-6">
+                                        <div className="flex items-start gap-4">
+                                            <Avatar>
+                                                <AvatarImage src={member?.avatar} />
+                                                <AvatarFallback>{member?.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-center">
+                                                    <p className="font-semibold">{member?.name}</p>
+                                                    <div className="flex items-center gap-1">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star key={i} className={`h-5 w-5 ${i < fb.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <p className="text-muted-foreground mt-2 italic">&quot;{fb.comment}&quot;</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
         )}
 
