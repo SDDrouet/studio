@@ -7,12 +7,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDmcC-ahcx4VB3z0Jgkz7Se-QsrJGaJjcI",
+  authDomain: "collabtask-58111.firebaseapp.com",
+  projectId: "collabtask-58111",
+  storageBucket: "collabtask-58111.firebasestorage.app",
+  messagingSenderId: "516505999289",
+  appId: "1:516505999289:web:7cfa3c32caf0bfedd38868"
 };
 
 // Initialize Firebase

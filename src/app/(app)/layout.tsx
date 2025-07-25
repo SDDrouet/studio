@@ -20,8 +20,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router]);
 
-  if (loading || !user) {
+  if (loading) {
     return <div>Cargando...</div>; // O un componente de carga más elaborado
+  }
+
+  if (!user) {
+    // Aunque useEffect redirige, es una buena práctica no renderizar el layout si no hay usuario.
+    // Esto previene flashes de contenido protegido.
+    return null;
   }
   
   return (
