@@ -21,9 +21,9 @@ export default function DashboardPage() {
     if (!user) return;
 
     setLoading(true);
-    // Fetch all users for the create project dialog
+    // Fetch all users for the create/edit project dialog
     const usersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const usersList = snapshot.docs.map(doc => doc.data() as User);
+        const usersList = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
         setAllUsers(usersList);
     });
 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
         {projects.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} allUsers={allUsers} />
             ))}
           </div>
         ) : (

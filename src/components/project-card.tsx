@@ -1,32 +1,43 @@
 import Link from 'next/link';
-import type { Project, Task, User } from '@/lib/data';
+import type { Project, Task, User, Feedback } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { TeamMembers } from './team-members';
 import { Badge } from './ui/badge';
-import { FolderKanban } from 'lucide-react';
+import { Edit, FolderKanban, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { EditProjectDialog } from './edit-project-dialog';
+import { Button } from './ui/button';
 
 interface ProjectCardProps {
   project: Project;
+  allUsers: User[];
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, allUsers }: ProjectCardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<User[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!project.id) return;
   
     const tasksRef = collection(db, 'tasks');
-    const q = query(tasksRef, where('projectId', '==', project.id));
-  
-    const unsubscribeTasks = onSnapshot(q, (snapshot) => {
+    const tasksQuery = query(tasksRef, where('projectId', '==', project.id));
+    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const projectTasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Task);
       setTasks(projectTasks);
+    });
+
+    const feedbackRef = collection(db, 'feedback');
+    const feedbackQuery = query(feedbackRef, where('projectId', '==', project.id));
+    const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+        const projectFeedback = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Feedback));
+        setFeedback(projectFeedback);
     });
   
     const fetchMembers = async () => {
@@ -44,12 +55,24 @@ export function ProjectCard({ project }: ProjectCardProps) {
   
     return () => {
       unsubscribeTasks();
+      unsubscribeFeedback();
     };
   }, [project.id, project.memberIds]);
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((task) => task.completed).length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const isCompleted = project.status === 'completed';
+
+  const averageRating = feedback.length > 0
+    ? feedback.reduce((acc, fb) => acc + fb.rating, 0) / feedback.length
+    : 0;
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditDialogOpen(true);
+  }
 
   if (loading) {
       return (
@@ -68,16 +91,25 @@ export function ProjectCard({ project }: ProjectCardProps) {
   }
 
   return (
+    <>
     <Link href={`/projects/${project.id}`}>
       <Card className="h-full flex flex-col hover:border-primary hover:shadow-md transition-all">
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle className="font-headline text-xl mb-2">{project.name}</CardTitle>
-            <FolderKanban className="h-6 w-6 text-muted-foreground" />
+            <CardTitle className="font-headline text-xl mb-2 pr-8">{project.name}</CardTitle>
+            <div className="flex items-center gap-2">
+                {isCompleted ? (
+                     <Badge className="bg-primary text-primary-foreground hover:bg-primary">Completado</Badge>
+                ) : (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEditClick} disabled={isCompleted}>
+                        <Edit className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
           </div>
           <CardDescription>{project.description}</CardDescription>
         </CardHeader>
-        <CardContent className="flex-grow">
+        <CardContent className="flex-grow space-y-4">
           <div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium">Progreso</span>
@@ -85,6 +117,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </div>
             <Progress value={progress} className="h-2" />
           </div>
+           {isCompleted && averageRating > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Calificación:</span>
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`h-4 w-4 ${i < Math.round(averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                ))}
+                <span className="text-xs text-muted-foreground ml-1">({averageRating.toFixed(1)})</span>
+              </div>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between items-center">
           <TeamMembers users={members} />
@@ -92,5 +135,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </CardFooter>
       </Card>
     </Link>
+    {!isCompleted && (
+        <EditProjectDialog
+            isOpen={isEditDialogOpen}
+            setIsOpen={setIsEditDialogOpen}
+            project={project}
+            users={allUsers}
+        />
+    )}
+    </>
   );
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -32,12 +32,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
-import type { User } from '@/lib/data';
+import type { User, Project } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import type { User as FirebaseUser } from 'firebase/auth';
 
 const projectSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -48,65 +47,65 @@ const projectSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
 
-interface CreateProjectDialogProps {
+interface EditProjectDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  project: Project;
   users: User[];
-  currentUser: FirebaseUser | null;
 }
 
-export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: CreateProjectDialogProps) {
+export function EditProjectDialog({ isOpen, setIsOpen, project, users }: EditProjectDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      memberIds: currentUser ? [currentUser.uid] : [],
+      name: project.name,
+      description: project.description,
+      dueDate: parse(project.dueDate, 'PPP', new Date(), { locale: es }),
+      memberIds: project.memberIds,
     },
   });
 
-  const onSubmit = async (data: ProjectFormValues) => {
-    if (!currentUser) {
-        toast({ title: 'Error', description: 'Debes iniciar sesión para crear un proyecto.', variant: 'destructive' });
-        return;
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: project.name,
+        description: project.description,
+        dueDate: parse(project.dueDate, 'PPP', new Date(), { locale: es }),
+        memberIds: project.memberIds,
+      });
     }
+  }, [isOpen, project, form]);
 
+
+  const onSubmit = async (data: ProjectFormValues) => {
     setIsLoading(true);
     try {
-      await addDoc(collection(db, 'projects'), {
+      const projectRef = doc(db, 'projects', project.id);
+      await updateDoc(projectRef, {
         name: data.name,
         description: data.description || '',
         dueDate: format(data.dueDate, 'PPP', { locale: es }),
         memberIds: data.memberIds,
-        ownerId: currentUser.uid,
-        status: 'in-progress',
-        createdAt: serverTimestamp(),
       });
-      toast({ title: '¡Éxito!', description: 'El proyecto se ha creado correctamente.' });
-      form.reset({ name: '', description: '', memberIds: [currentUser.uid]});
+      toast({ title: '¡Éxito!', description: 'El proyecto se ha actualizado correctamente.' });
       setIsOpen(false);
     } catch (error) {
-      console.error('Error creando el proyecto:', error);
-      toast({ title: 'Error', description: 'No se pudo crear el proyecto. Inténtalo de nuevo.', variant: 'destructive' });
+      console.error('Error actualizando el proyecto:', error);
+      toast({ title: 'Error', description: 'No se pudo actualizar el proyecto. Inténtalo de nuevo.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-        if(!open) {
-           form.reset({ name: '', description: '', memberIds: currentUser ? [currentUser.uid] : []});
-        }
-        setIsOpen(open);
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
+          <DialogTitle>Editar Proyecto</DialogTitle>
           <DialogDescription>
-            Completa los detalles a continuación para crear un nuevo proyecto.
+            Actualiza los detalles del proyecto &quot;{project.name}&quot;.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -168,7 +167,7 @@ export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: C
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
+                          disabled={(date) => date < new Date('1900-01-01')}
                           initialFocus
                           locale={es}
                         />
@@ -207,11 +206,11 @@ export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: C
                                          ? field.onChange([...field.value, user.uid])
                                          : field.onChange(
                                              field.value?.filter(
-                                               (value) => value !== user.uid
+                                               (value) => value !== user.uid && value !== project.ownerId
                                              )
                                            )
                                      }}
-                                     disabled={user.uid === currentUser?.uid}
+                                     disabled={user.uid === project.ownerId}
                                    />
                                  </FormControl>
                                  <FormLabel className="font-normal w-full cursor-pointer">
@@ -221,7 +220,7 @@ export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: C
                                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="font-medium">{user.name}</p>
+                                            <p className="font-medium">{user.name}{user.uid === project.ownerId && " (Owner)"}</p>
                                             <p className="text-xs text-muted-foreground">{user.email}</p>
                                         </div>
                                    </div>
@@ -243,7 +242,7 @@ export function CreateProjectDialog({ isOpen, setIsOpen, users, currentUser }: C
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Crear Proyecto
+                Guardar Cambios
               </Button>
             </DialogFooter>
           </form>

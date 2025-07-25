@@ -24,6 +24,7 @@ export type Project = {
   description: string;
   dueDate: string;
   memberIds: string[]; // Storing user UIDs
+  ownerId: string;
   status: 'in-progress' | 'completed';
 };
 
