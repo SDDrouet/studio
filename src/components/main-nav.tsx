@@ -36,19 +36,19 @@ export function MainNav() {
       <SidebarMenu>
         {menuItems.map((item) => (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} passHref>
-              <SidebarMenuButton
-                isActive={pathname === item.href}
-                className={cn(
-                  'w-full justify-start',
-                  pathname === item.href && 'bg-sidebar-accent'
-                )}
-                asChild
-              >
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href}
+              className={cn(
+                'w-full justify-start',
+                pathname === item.href && 'bg-sidebar-accent'
+              )}
+            >
+              <Link href={item.href}>
                 <item.icon className="h-5 w-5" />
                 <span>{item.label}</span>
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
