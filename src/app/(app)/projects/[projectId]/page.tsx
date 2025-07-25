@@ -68,7 +68,7 @@ export default function ProjectPage() {
     const feedbackRef = collection(db, 'feedback');
     const feedbackQuery = query(feedbackRef, where('projectId', '==', projectId));
     const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
-        const projectFeedback = snapshot.docs.map(doc => doc.data() as Feedback);
+        const projectFeedback = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Feedback));
         setFeedback(projectFeedback);
         setLoading(false);
     });
@@ -209,10 +209,10 @@ export default function ProjectPage() {
                 </div>
                 {showFeedback && (
                     <div className="space-y-4">
-                        {feedback.map(fb => {
+                        {feedback.map((fb, index) => {
                             const member = getMemberByUid(fb.userId);
                             return (
-                                <Card key={fb.id}>
+                                <Card key={fb.id || index}>
                                     <CardContent className="p-6">
                                         <div className="flex items-start gap-4">
                                             <Avatar>
