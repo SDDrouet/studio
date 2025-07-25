@@ -8,14 +8,30 @@ import { Badge } from "./ui/badge";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { Button } from "./ui/button";
+import { Edit, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 interface TaskCardProps {
     task: Task;
     onTaskCompletionChange: (taskId: string, completed: boolean) => void;
     isProjectCompleted: boolean;
+    onEdit: () => void;
+    onDelete: () => void;
 }
 
-export function TaskCard({ task, onTaskCompletionChange, isProjectCompleted }: TaskCardProps) {
+export function TaskCard({ task, onTaskCompletionChange, isProjectCompleted, onEdit, onDelete }: TaskCardProps) {
     const [assignee, setAssignee] = useState<User | null>(null);
 
     useEffect(() => {
@@ -50,41 +66,70 @@ export function TaskCard({ task, onTaskCompletionChange, isProjectCompleted }: T
                     <p className={`text-sm text-muted-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.description}
                     </p>
+                     <div className="text-xs">
+                        <Badge variant={task.completed ? "secondary" : "outline"}>
+                            Vence: {task.dueDate}
+                        </Badge>
+                    </div>
                 </div>
-                {assignee ? (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Asignado a {assignee.name}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                ) : (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                 <Avatar className="h-8 w-8">
-                                    <AvatarFallback>?</AvatarFallback>
-                                </Avatar>
-                            </TooltipTrigger>
-                             <TooltipContent>
-                                <p>Sin asignar</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
+
+                <div className="flex items-center gap-2">
+                    {assignee ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                        <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Asignado a {assignee.name}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>?</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Sin asignar</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {!isProjectCompleted && (
+                    <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción no se puede deshacer. Esto eliminará permanentemente la tarea.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    )}
+                </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
-                <Badge variant={task.completed ? "secondary" : "outline"} className="text-xs">
-                    Vence: {task.dueDate}
-                </Badge>
-            </CardContent>
         </Card>
     )
 }

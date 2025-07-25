@@ -12,11 +12,23 @@ import { TeamMembers } from '@/components/team-members';
 import { Calendar, CheckCircle, Eye, PlusCircle, Rocket, Star } from 'lucide-react';
 import { TaskCard } from '@/components/task-card';
 import { db } from '@/lib/firebase';
-import { collection, doc, onSnapshot, query, where, updateDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where, updateDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { CreateTaskDialog } from '@/components/create-task-dialog';
 import { CompleteProjectDialog } from '@/components/complete-project-dialog';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { EditTaskDialog } from '@/components/edit-task-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ProjectPage() {
   const params = useParams();
@@ -29,8 +41,11 @@ export default function ProjectPage() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
+  const [isEditTaskDialogOpen, setEditTaskDialogOpen] = useState(false);
   const [isCompleteProjectDialogOpen, setCompleteProjectDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+
 
   useEffect(() => {
     if (!projectId) return;
@@ -91,6 +106,20 @@ export default function ProjectPage() {
     }
   };
 
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setEditTaskDialogOpen(true);
+  };
+  
+  const handleDeleteTask = async (taskId: string) => {
+    const taskRef = doc(db, 'tasks', taskId);
+    try {
+        await deleteDoc(taskRef);
+    } catch (error) {
+        console.error("Error deleting task: ", error);
+    }
+  }
+
   const { completedTasks, totalTasks, progress, allTasksCompleted } = useMemo(() => {
     if (!tasks) return { completedTasks: 0, totalTasks: 0, progress: 0, allTasksCompleted: false };
     const completed = tasks.filter(t => t.completed).length;
@@ -147,7 +176,7 @@ export default function ProjectPage() {
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Añadir Tarea
               </Button>
-              <Button onClick={() => setCompleteProjectDialogOpen(true)} disabled={(!allTasksCompleted && !isProjectCompleted) || userHasGivenFeedback}>
+              <Button onClick={() => setCompleteProjectDialogOpen(true)} disabled={(!allTasksCompleted && !isProjectCompleted) || (isProjectCompleted && userHasGivenFeedback)}>
                   <Rocket className="mr-2 h-4 w-4" />
                   {completeButtonText()}
               </Button>
@@ -217,10 +246,10 @@ export default function ProjectPage() {
                 </div>
                 {showFeedback && (
                     <div className="space-y-4">
-                        {feedback.map((fb, index) => {
+                        {feedback.map((fb) => {
                             const member = getMemberByUid(fb.userId);
                             return (
-                                <Card key={fb.id || index}>
+                                <Card key={fb.id}>
                                     <CardContent className="p-6">
                                         <div className="flex items-start gap-4">
                                             <Avatar>
@@ -253,7 +282,14 @@ export default function ProjectPage() {
           <h2 className="text-2xl font-bold tracking-tight font-headline mb-4">Tareas</h2>
           <div className="space-y-4">
               {tasks.map(task => (
-                  <TaskCard key={task.id} task={task} onTaskCompletionChange={handleTaskCompletionChange} isProjectCompleted={isProjectCompleted} />
+                  <TaskCard 
+                    key={task.id} 
+                    task={task} 
+                    onTaskCompletionChange={handleTaskCompletionChange} 
+                    isProjectCompleted={isProjectCompleted}
+                    onEdit={() => handleEditTask(task)}
+                    onDelete={() => handleDeleteTask(task.id)}
+                  />
               ))}
               {tasks.length === 0 && <p className="text-muted-foreground">Aún no se han añadido tareas a este proyecto.</p>}
           </div>
@@ -267,6 +303,16 @@ export default function ProjectPage() {
             project={project}
             members={members}
           />
+      )}
+
+      {selectedTask && !isProjectCompleted &&(
+        <EditTaskDialog
+            isOpen={isEditTaskDialogOpen}
+            setIsOpen={setEditTaskDialogOpen}
+            task={selectedTask}
+            project={project}
+            members={members}
+        />
       )}
 
       {currentUser && (
