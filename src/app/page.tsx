@@ -63,7 +63,7 @@ export default function Home() {
             </div>
             <div>
               <Image
-                src="https://placehold.co/600x400.png"
+                src="/images/team.jpg"
                 alt="Panel de TareaColab"
                 width={600}
                 height={400}
